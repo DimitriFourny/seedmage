@@ -44,6 +44,7 @@ if args.update_interval:
   update_interval = args.update_interval 
 
 print("\nStarting seeding at %s/s" % utils.sizeof_fmt(seed_per_second))
+total_uploaded = 0
 while True:
   print("Waiting %d seconds..." % update_interval)
   time.sleep(update_interval)
@@ -52,5 +53,6 @@ while True:
   uploaded_bytes = int(uploaded_bytes * random.uniform(0.8, 1.2)) # +- 20%
   print("Uploading %s" % utils.sizeof_fmt(uploaded_bytes))
 
-  seeder.upload(uploaded_bytes)
+  total_uploaded += uploaded_bytes
+  seeder.upload(total_uploaded)
   print("Uploaded")
