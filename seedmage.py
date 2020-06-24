@@ -54,5 +54,10 @@ while True:
   print("Uploading %s" % utils.sizeof_fmt(uploaded_bytes))
 
   total_uploaded += uploaded_bytes
-  seeder.upload(total_uploaded)
-  print("Uploaded")
+  while True:
+    try:
+      seeder.upload(total_uploaded)
+      print("Uploaded")
+      break
+    except:
+      print("Request failed, trying again...")
