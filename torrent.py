@@ -112,8 +112,7 @@ class Seeder:
       "supportcrypto": 1,
       "no_peer_id": 1
     }
-    req = requests.get(tracker_url, params=http_params, 
-        headers=self.HTTP_HEADERS)
+    req = requests.get(tracker_url, params=http_params, headers=self.HTTP_HEADERS, timeout=10)
     self.info = bencoding.decode(req.content)
     self.update_interval = self.info[b"interval"]
 
@@ -133,7 +132,7 @@ class Seeder:
       "no_peer_id": 1
     }
     http_params["uploaded"] = uploaded_bytes
-    requests.get(tracker_url, params=http_params, headers=self.HTTP_HEADERS)
+    requests.get(tracker_url, params=http_params, headers=self.HTTP_HEADERS, timeout=10)
 
   @property
   def peers(self):
