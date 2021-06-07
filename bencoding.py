@@ -1,40 +1,41 @@
 """Helper methods to encode and decode Bencoding data."""
 
 def _decode(raw_buffer, elements, index=0):
-    if raw_buffer[index] == ord('d'):
-        index += 1
-        obj = {}
-        while raw_buffer[index] != ord('e'):
-            key = []
-            value = []
-            index = _decode(raw_buffer, key, index)
-            index = _decode(raw_buffer, value, index)
-            obj[key[0]] = value[0]
-        index += 1
-        elements.append(obj)
-    elif raw_buffer[index] == ord('l'):
-        index += 1
-        list_elements = []
-        while raw_buffer[index] != ord('e'):
-            value = []
-            index = _decode(raw_buffer, value, index)
-            list_elements.append(value[0])
-        index += 1
-        elements.append(list_elements)
-    elif raw_buffer[index] == ord('i'):
-        index += 1
-        pos = index + raw_buffer[index:].find(ord('e'))
-        number = int(raw_buffer[index:pos])
-        index = pos+1
-        elements.append(number)
-    else:
-        pos = index + raw_buffer[index:].find(ord(':'))
-        size = int(raw_buffer[index:pos])
-        index = pos+1
-        data = raw_buffer[index:index+size]
-        index += size
-        elements.append(data)
-    return index
+  if raw_buffer[index] == ord('d'):
+      index += 1
+      obj = {}
+      while raw_buffer[index] != ord('e'):
+          key = []
+          value = []
+          index = _decode(raw_buffer, key, index)
+          index = _decode(raw_buffer, value, index)
+          obj[key[0]] = value[0]
+      index += 1
+      elements.append(obj)
+  elif raw_buffer[index] == ord('l'):
+      index += 1
+      list_elements = []
+      while raw_buffer[index] != ord('e'):
+          value = []
+          index = _decode(raw_buffer, value, index)
+          list_elements.append(value[0])
+      index += 1
+      elements.append(list_elements)
+  elif raw_buffer[index] == ord('i'):
+      index += 1
+      pos = index + raw_buffer[index:].find(ord('e'))
+      number = int(raw_buffer[index:pos])
+      index = pos+1
+      elements.append(number)
+  else:
+      pos = index + raw_buffer[index:].find(ord(':'))
+      size = int(raw_buffer[index:pos])
+      index = pos+1
+      data = raw_buffer[index:index+size]
+      index += size
+      elements.append(data)
+  return index
+
 
 def decode(raw_buffer):
   """Decode a bytes string into its corresponding data via Bencoding."""
