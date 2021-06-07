@@ -14,18 +14,23 @@ import utils
 
 class File:
   def __init__(self, filepath):
-    self.filepath = filepath
-    f = open(filepath, "rb")
-    self.raw_torrent = f.read()
-    f.close()
-    self.torrent_header = bencoding.decode(self.raw_torrent)
+    while True:
+      try:
+        self.filepath = filepath
+        f = open(filepath, "rb")
+        self.raw_torrent = f.read()
+        f.close()
+        self.torrent_header = bencoding.decode(self.raw_torrent)
 
-    self.announce = self.torrent_header[b"announce"].decode("utf-8")
+        self.announce = self.torrent_header[b"announce"].decode("utf-8")
 
-    torrent_info = self.torrent_header[b"info"]
-    m = hashlib.sha1()
-    m.update(bencoding.encode(torrent_info))
-    self.file_hash = m.digest()
+        torrent_info = self.torrent_header[b"info"]
+        m = hashlib.sha1()
+        m.update(bencoding.encode(torrent_info))
+        self.file_hash = m.digest()
+        break
+      except:
+        utils.sleep(150)
 
   @property
   def total_size(self):
@@ -40,6 +45,12 @@ class File:
       size = torrent_info[b"length"]
 
     return size
+
+  @property
+  def name(self):
+    size = 0
+    torrent_info = self.torrent_header[b"info"]
+    return torrent_info[b"name"].decode("utf-8")
 
   def __str__(self):
     announce = self.torrent_header[b"announce"].decode("utf-8")
@@ -87,7 +98,12 @@ class File:
 class Seeder:
   HTTP_HEADERS = {
     "Accept-Encoding": "gzip",
-    "User-Agent": "Deluge 1.3.15"
+    "User-Agent": "Deluge/2.0.3-2-201906121747-ubuntu18.04.1 libtorrent/1.1.5.0"
+  }
+
+  proxies = {
+    "http": "http://127.0.0.1:3128",
+    "https": "http://127.0.0.1:3128"
   }
 
   def __init__(self, torrent):
@@ -97,42 +113,57 @@ class Seeder:
     self.port = random.randint(1025, 65535)
 
   def load_peers(self):
-    tracker_url = self.torrent.announce
-    http_params = {
-      "info_hash": self.torrent.file_hash, 
-      "peer_id": self.peer_id.encode("ascii"),
-      "port": self.port,
-      "uploaded": 0,
-      "downloaded": 0,
-      "left": self.torrent.total_size,
-      "event": "started",
-      "key": self.download_key,
-      "compact": 1,
-      "numwant": 200,
-      "supportcrypto": 1,
-      "no_peer_id": 1
-    }
-    req = requests.get(tracker_url, params=http_params, headers=self.HTTP_HEADERS, timeout=10)
-    self.info = bencoding.decode(req.content)
-    self.update_interval = self.info[b"interval"]
+    i = 0
+    while True:
+      try:
+        tracker_url = self.torrent.announce
+        http_params = {
+          "info_hash": self.torrent.file_hash, 
+          "peer_id": self.peer_id.encode("ascii"),
+          "port": self.port,
+          "uploaded": 0,
+          "downloaded": 0,
+          "left": self.torrent.total_size,
+          "event": "started",
+          "key": self.download_key,
+          "compact": 1,
+          "numwant": 200,
+          "supportcrypto": 1,
+          "no_peer_id": 1
+        }
+        req = requests.get(tracker_url, params=http_params, proxies=self.proxies, headers=self.HTTP_HEADERS, timeout=10)
+        self.info = bencoding.decode(req.content)
+        self.update_interval = self.info[b"interval"]
+        break
+      except:
+        i += 1
+        utils.sleep(60*i)
 
-  def upload(self, uploaded_bytes):
-    tracker_url = self.torrent.announce
-    http_params = {
-      "info_hash": self.torrent.file_hash, 
-      "peer_id": self.peer_id.encode("ascii"),
-      "port": self.port,
-      "uploaded": 0,
-      "downloaded": 0,
-      "left": self.torrent.total_size,
-      "key": self.download_key,
-      "compact": 1,
-      "numwant": 0,
-      "supportcrypto": 1,
-      "no_peer_id": 1
-    }
-    http_params["uploaded"] = uploaded_bytes
-    requests.get(tracker_url, params=http_params, headers=self.HTTP_HEADERS, timeout=10)
+  def upload(self, uploaded_bytes, downloaded_bytes):
+    i = 0
+    while True:
+      try:
+        tracker_url = self.torrent.announce
+        http_params = {
+          "info_hash": self.torrent.file_hash, 
+          "peer_id": self.peer_id.encode("ascii"),
+          "port": self.port,
+          "uploaded": 0,
+          "downloaded": 0,
+          "left": self.torrent.total_size,
+          "key": self.download_key,
+          "compact": 1,
+          "numwant": 0,
+          "supportcrypto": 1,
+          "no_peer_id": 1
+        }
+        http_params["uploaded"] = uploaded_bytes
+        http_params["downloaded"] = downloaded_bytes
+        requests.get(tracker_url, params=http_params, proxies=self.proxies, headers=self.HTTP_HEADERS, timeout=10)
+        break
+      except:
+        i += 1
+        utils.sleep(60*i)
 
   @property
   def peers(self):
